@@ -37,3 +37,63 @@ Lambda 表达式是一种匿名函数。
 Lambda 表达式的语法为如下形式： `{ p1: T1, ..., pn: Tn => expressions | declarations }`。
 
 ### 5.函数调用语法糖
+
+#### 5.1 尾随 lambda
+
+当函数最后一个形参是函数类型，并且此时的实参是 **lambda表达式** ，可以将lambda放在函数调用的尾部。如果lambda表达式没有参数，可以省略 `=>` 例如：
+
+```cangjie
+myIf(true, { => 100 })   // General function call
+
+myIf(true) {             // Trailing closure call
+	100
+}
+```
+
+函数调用只有一个lambda实参，还可以省略  `()` 。
+
+```cangjie
+func f(fn: (Int64) -> Int64) { fn(1) }
+
+func test() {
+    f { i => i * i }
+}
+```
+
+#### 5.2 Flow表达式
+
+##### 5.2.1 Pipeline 表达式  `|>`
+
+数据流向操作符。f(x) == x |> f。
+
+表达式由变量开始。
+
+**原格式**：
+
+```
+print(substring(toUpperCase(trim(text)), 10))
+```
+
+**使用 Pipeline**：
+
+```
+text |> trim |> toUpperCase |> substring(10) |> print
+```
+
+##### 5.2.2 Composition 表达式 `~>`
+
+两个单参函数的复合函数。
+
+表达式由函数开始。
+
+```cangjie
+func f(x: Int64): Float64 {
+    Float64(x)
+}
+func g(x: Float64): Float64 {
+    x
+}
+
+var fg = f ~> g // The same as { x: Int64 => g(f(x)) }
+```
+
