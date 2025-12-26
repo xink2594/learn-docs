@@ -23,12 +23,23 @@
 
 ---
 
-#### 1 RetryPolicy (重试策略)
+#### 1 RetryPolicy (重试策略) - 接口类
 
 `RetryOperations.excute()` 开始一次重试序列，调用 `open(parent)` 得到 `RetryContext`。
-每次尝试执行业务逻辑 `RetryCallBack` 前，调用 `canRetry(context)` 决定是否继续。
+
+每次尝试执行业务逻辑 `RetryCallBack` 前，调用 `canRetry(context)` ，查看 `context` 中的内容决定是否继续。
+
 业务回调执行失败时，调用 `registerThrowable(context, throwable)` 更新状态；框架可能再调用 `canRetry`。
+
 重试序列完成或放弃时，调用 `close(context)` 做清理。
+
+##### RetryContext
+
+继承AttributeAccessor，可以在重试的各阶段(`RetryListener`、`BackOffPolicy`)之间传递自定义数据。
+
+定义了常量(NAME,STATE_KEY等)，储存元数据。
+
+由 `RetryPolicy.open()` 创建，并在整个重试循环中被传递，最后由 `RetryPolicy.close()` 结束。
 
 ##### RetryOpration
 
@@ -38,3 +49,8 @@
 
 
 
+#### 2 BackOffPolicy (退避策略)
+
+
+
+#### 3 RetryContext (重试上下文)
