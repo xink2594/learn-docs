@@ -208,8 +208,6 @@ let context = ActivatorUtilities.createInstance<DbContext>(provider, "spire")
 
 #### 作用域示例
 
-
-
 ```c++
 import std.random.*
 import spire_extensions_injection.*
@@ -283,9 +281,7 @@ Transient:7833323014559001106
 
 运行下面的示例，可以发现当作用域结束的时候，容器会自动释放服务，如果实现了Resource那么会调用它的close方法。
 
-
-
-```
+```c++
 main(): Int64 {
     let services = ServiceCollection()
     services.addScoped<IDbConnection, SqlConnection>()
@@ -311,4 +307,93 @@ class SqlConnection <: IDbConnection & Resource {
         _isClosed
     }
 }
+```
+
+## 内置服务
+
+依赖注入框架自动提供三个内置服务，这些服务无需手动注册。
+
+### IServiceProvider
+
+容器可以解析当前作用域的容器实例本身即`自我解析`。它的使用场景是服务内部需要在某个条件成立时才解析某个服务。
+
+```c++
+public class SomeService {
+    public SomeService(let provider: IServiceProvider) { }
+
+    public func getConnection(): ?IDbConnection {
+        // 可以由服务内部来决策是否解析IDbConnection
+        if(DateTime.now().year % 2 == 0) {
+            provider.getOrThrow<IDbConnection>()
+        }
+        return None
+    }
+}
+
+// 无需注册IServiceProvider
+let services = ServiceCollection()
+services.addSingleton<IDbConnection, SqlConnection>()
+services.addSingleton<SomeService, SomeService>()
+let provider = services.build()
+let service = provider.getOrThrow<SomeService>()
+service.getConnection().isSome() |> println
+```
+
+
+
+通常我们在构造函数里写依赖，容器会在创建服务时立即把依赖做出来给你。例如：
+
+```
+class DbContext {
+    public DbContext(let connections: Collection<IDbConnection>) {
+       // 这里面的 connections 就是容器“立即做出来”并塞给你的依赖
+    }
+}
+```
+
+但有时候，那个依赖对象**特别大、特别重**（创建很耗资源），或者你**不确定是否真的需要它**（比如只有在特定条件下才用）。
+
+因此我们使用 `IServiceProvider`，只有在满足条件的时候才请求具体服务创建依赖。
+```c++
+public class SomeService {
+    // 给我一个provider，而不是直接给我 IDbConnection
+    public SomeService(let provider: IServiceProvider) { }
+
+    public func getConnection() {
+        // 只有在这个条件满足时 (比如双数年份)
+        if(DateTime.now().year % 2 == 0) {
+            // 此时才请求，使其创建 IDbConnection
+            provider.getOrThrow<IDbConnection>()
+        }
+    }
+}
+```
+
+
+
+### IServiceScopeFactory
+
+作用域工厂，用于创建作用域，使用场景很少
+
+```c++
+let services = ServiceCollection()
+let provider = services.build()
+let factory = provider.getOrThrow<IServiceScopeFactory>()
+// 创建作用域
+try(scope = factory.createScope()) {
+
+}
+```
+
+### IServiceProviderIsService
+
+该服务用于判断否个服务是否注册，使用场景很少
+
+```c++
+let services = ServiceCollection()
+services.addSingleton<IDbConnection, SqlConnection>()
+let provider = services.build()
+let callSiteFactory = provider.getOrThrow<IServiceProviderIsService>()
+callSiteFactory.isService<IDbConnection>() |> println // true
+callSiteFactory.isService<DbContext>() |> println // false
 ```
