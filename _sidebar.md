@@ -5,3 +5,5 @@
 - **Spring**
   - [Spring Retry](/spring/spring_retry.md)
 
+- **Spire**
+  - [Spire](/spire/notes.md)
